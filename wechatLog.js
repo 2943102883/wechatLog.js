@@ -1,0 +1,190 @@
+// ==UserScript==
+// @name         fomatWeChatJSON
+// @namespace    http://github.com/2943102883
+// @version      0.1
+// @description  在线格式化JSON文件
+// @author       SunShineGo
+// @include      *://mp.weixin.qq.com/wxamp/userlog/*
+// @include      *://mp.weixin.qq.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=csdn.net
+// @require      https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+  insertCSS(`
+  #jsonPre {
+    float: left;
+    /* width: 100%; */
+    width: 60vw;
+    height: 50vh;
+    outline: 1px solid #ccc;
+    padding: 5px;
+    overflow: scroll;
+  }
+
+  .string {
+    color: green;
+  }
+
+  .number {
+    color: darkorange;
+  }
+
+  .boolean {
+    color: blue;
+  }
+
+  .null {
+    color: magenta;
+  }
+
+  .key {
+    color: red;
+  }
+  .formatJSON {
+    position: fixed;
+    width: 50px;
+    height: 50px;
+    background: red;
+    top: 30vh;
+    right:10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: medium;
+    color: #fff;
+    cursor:pointer;
+  }
+  `)
+  insertHTML(`
+  <div class="formatJSON">格式化</div>
+  `)
+  insertHTML(`
+    <div class="toastDialog"></div>
+  `)
+  $('.formatJSON').click(function () {
+    if ($('.vc-item-subitem-undefined').length > 0) {
+      let JSONList = $('.vc-item-subitem-undefined')
+      JSONList.each(function (index, item) {
+        if (item.innerHTML.indexOf('<pre id="jsonPre">') < 0 && item.innerHTML.indexOf('UserLog:fail') < 0) {
+          let userInfo = getBaseInfo(item.innerHTML)
+          item.innerHTML = '<div>' + (userInfo.studentInfo ? (userInfo.studentInfo === undefined ? '空' : userInfo.studentInfo) : '空') + '(' + (userInfo.mode ? (userInfo.mode === undefined ? '空' : userInfo.mode) : '空') + ')' + '</div><pre id="jsonPre">' + parse(item.innerHTML) + '</pre>'
+          // item.innerHTML = '<pre id="jsonPre">' + parse(item.innerHTML) + '</pre>'
+        }
+      })
+    } else {
+      alert('没有可格式化的内容, 请在：微信小程序后台-开发管理-运维中心进行格式化日志')
+    }
+  })
+
+})();
+
+
+function parse(str) {
+  // 设置缩进为2个空格
+  str = JSON.stringify(JSON.parse(str), null, 2);
+  str = str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return str.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+    var cls = 'number';
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) {
+        cls = 'key';
+      } else {
+        cls = 'string';
+      }
+    } else if (/true|false/.test(match)) {
+      cls = 'boolean';
+    } else if (/null/.test(match)) {
+      cls = 'null';
+    }
+    return '<span class="' + cls + '">' + match + '</span>';
+  });
+}
+function insertCSS(cssStyle) {
+  var style = document.createElement("style");
+  var theHead = document.head || document.getElementsByTagName('head')[0];
+  style.type = "text/css";//IE需要设置
+  if (style.styleSheet) {  //IE
+    var ieInsertCSS = function () {
+      try {
+        style.styleSheet.cssText = cssStyle;
+      } catch (e) {
+
+      }
+    };
+    //若当前styleSheet不能使用，则放到异步中
+    if (style.styleSheet.disable) {
+      setTimeout(ieInsertCSS, 10);
+
+    } else {
+      ieInsertCSS();
+    }
+  } else { //W3c浏览器
+    style.appendChild(document.createTextNode(cssStyle));
+    theHead.appendChild(style);
+
+  }
+}
+
+function insertHTML(html) {
+  var style = document.createElement("div");
+  var theHead = document.body || document.getElementsByTagName('body')[0];
+  // style.type = "text/css";//IE需要设置
+  if (style.styleSheet) {  //IE
+    var ieInsertCSS = function () {
+      try {
+        style.styleSheet.cssText = html;
+      } catch (e) {
+
+      }
+    };
+    //若当前styleSheet不能使用，则放到异步中
+    if (style.styleSheet.disable) {
+      setTimeout(ieInsertCSS, 10);
+
+    } else {
+      ieInsertCSS();
+    }
+  } else { //W3c浏览器
+    style.innerHTML = html
+    theHead.appendChild(style);
+
+  }
+
+}
+function getBaseInfo(str) {
+  try {
+    // return JSON.parse(str).BaseInfo
+    let obj = JSON.parse(str)
+    let studentInfo = ''
+    let mode = ''
+    if (obj.BaseInfo) {
+      // 这边要判断是不是undefined, 因为如果未登录，就为空，是undefined
+      // 最初的日志系统studentInfo写错了，写成studetnInfo了，兼容一下
+      // studentInfo = obj.BaseInfo.studentInfo.studentName + '-' + obj.BaseInfo.studentInfo.classInfo.name + '-' + obj.BaseInfo.studentInfo.schoolInfo.name
+      studentInfo = (obj.BaseInfo.studetnInfo ? (obj.BaseInfo.studetnInfo.studentName ? obj.BaseInfo.studetnInfo.studentName : '空') : (obj.BaseInfo.studentInfo.studentName ? obj.BaseInfo.studentInfo.studentName : '空')) + '-' + (obj.BaseInfo.studetnInfo ? (obj.BaseInfo.studetnInfo.classInfo.name ? obj.BaseInfo.studetnInfo.classInfo.name : '空') : (obj.BaseInfo.studentInfo.classInfo.name ? obj.BaseInfo.studentInfo.classInfo.name : '空')) + '-' + (obj.BaseInfo.studetnInfo ? (obj.BaseInfo.studetnInfo.schoolInfo.name ? obj.BaseInfo.studetnInfo.schoolInfo.name : '空') : (obj.BaseInfo.studentInfo.schoolInfo.name ? obj.BaseInfo.studentInfo.schoolInfo.name : '空'))
+      mode = obj.BaseInfo.mode
+    } else if (obj.studentInfo || obj.studetnInfo) {
+      // studentInfo = obj.studentInfo.studentName + '-' + obj.studentInfo.classInfo.name + '-' + obj.studentInfo.schoolInfo.name
+      studentInfo = (obj.studetnInfo ? (obj.studetnInfo.studentName ? obj.studetnInfo.studentName : '空') : (obj.studentInfo.studentName ? obj.studentInfo.studentName : '空')) + '-' + (obj.studetnInfo ? (obj.studetnInfo.classInfo.name ? obj.studetnInfo.classInfo.name : '空') : (obj.studentInfo.classInfo.name ? obj.studentInfo.classInfo.name : '空')) + '-' + (obj.studetnInfo ? (obj.studetnInfo.schoolInfo.name ? obj.studetnInfo.schoolInfo.name : '空') : (obj.studentInfo.schoolInfo.name ? obj.studentInfo.schoolInfo.name : '空'))
+      mode = obj.mode
+    } else {
+      console.log('未知');
+      studentInfo = '未知'
+      mode = '未知'
+    }
+    return {
+      studentInfo,
+      mode
+    }
+
+  } catch (error) {
+    console.log('getBaseInfoError', error);
+  }
+}
