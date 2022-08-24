@@ -47,7 +47,7 @@
     position: fixed;
     width: 50px;
     height: 50px;
-    background: red;
+    background-image: linear-gradient(to right,#ff863a, #ff4623);
     top: 30vh;
     right:10px;
     border-radius: 5px;
@@ -66,24 +66,39 @@
     <div class="toastDialog"></div>
   `)
   $('.formatJSON').click(function () {
-    if ($('.vc-item-subitem-undefined').length > 0) {
-      let JSONList = $('.vc-item-subitem-undefined')
-      JSONList.each(function (index, item) {
-        if (item.innerHTML.indexOf('<pre id="jsonPre">') < 0 && item.innerHTML.indexOf('UserLog:fail') < 0) {
-          let userInfo = getBaseInfo(item.innerHTML)
-          item.innerHTML = '<div>' + (userInfo.studentInfo ? (userInfo.studentInfo === undefined ? '空' : userInfo.studentInfo) : '空') + '(' + (userInfo.mode ? (userInfo.mode === undefined ? '空' : userInfo.mode) : '空') + ')' + '</div><pre id="jsonPre">' + parse(item.innerHTML) + '</pre>'
-          // item.innerHTML = '<pre id="jsonPre">' + parse(item.innerHTML) + '</pre>'
-        }
-      })
+    let userName = $('.user_name')[0].innerHTML
+    console.log('userName', userName)
+    if (userName === '端校易') {
+      if ($('.vc-item-subitem-undefined').length > 0) {
+        let JSONList = $('.vc-item-subitem-undefined')
+        JSONList.each(function (index, item) {
+          if (item.innerHTML.indexOf('<pre id="jsonPre">') < 0 && item.innerHTML.indexOf('UserLog:fail') < 0) {
+            let userInfo = getBaseInfo(item.innerHTML)
+            // item.innerHTML = '<div>' + (userInfo.studentInfo ? (userInfo.studentInfo === undefined ? '空' : userInfo.studentInfo) : '空') + '(' + (userInfo.mode ? (userInfo.mode === undefined ? '空' : userInfo.mode) : '空') + ')' + '</div><pre id="jsonPre">' + parse(item.innerHTML) + '</pre>'
+            item.innerHTML = `
+              <div>
+                ${(userInfo.studentInfo ? (userInfo.studentInfo === undefined ? '空' : userInfo.studentInfo) : '空')}
+                ( ${(userInfo.mode ? (userInfo.mode === undefined ? '空' : userInfo.mode) : '空')} )
+              </div>
+              </div><pre id="jsonPre">${parse(item.innerHTML)}</pre>
+            `
+            // 下面这个是最基础的，会将所有的JSON格式化，上面针对自己的项目在格式化的上面添加了提示信息，可以根据自己的项目修改对项目这行进行修改
+            // item.innerHTML = '<pre id="jsonPre">' + parse(item.innerHTML) + '</pre>'
+          }
+        })
+      } else {
+        alert('没有可格式化的内容, 请在：微信小程序后台-开发管理-运维中心进行格式化日志')
+      }
     } else {
-      alert('没有可格式化的内容, 请在：微信小程序后台-开发管理-运维中心进行格式化日志')
+      alert('当前是:' + userName + '\n请在家长端的运维中心中进行格式化')
     }
+
   })
 
 })();
 
 
-function parse(str) {
+function parse(str) { // 格式化输出json
   // 设置缩进为2个空格
   str = JSON.stringify(JSON.parse(str), null, 2);
   str = str
@@ -106,7 +121,7 @@ function parse(str) {
     return '<span class="' + cls + '">' + match + '</span>';
   });
 }
-function insertCSS(cssStyle) {
+function insertCSS(cssStyle) {  // 注入css样式
   var style = document.createElement("style");
   var theHead = document.head || document.getElementsByTagName('head')[0];
   style.type = "text/css";//IE需要设置
@@ -132,7 +147,7 @@ function insertCSS(cssStyle) {
   }
 }
 
-function insertHTML(html) {
+function insertHTML(html) { // 注入html
   var style = document.createElement("div");
   var theHead = document.body || document.getElementsByTagName('body')[0];
   // style.type = "text/css";//IE需要设置
@@ -158,7 +173,7 @@ function insertHTML(html) {
   }
 
 }
-function getBaseInfo(str) {
+function getBaseInfo(str) { // 格式化数据，获取基本信息
   try {
     // return JSON.parse(str).BaseInfo
     let obj = JSON.parse(str)
